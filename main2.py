@@ -1,7 +1,6 @@
 import pandas as pd
 import re
 from headers_vipp import headers_vipp
-
 import re
 
 
@@ -46,24 +45,26 @@ def abrir_planilha_distriprime():
   return dicionario
 
 
-def comparar(dados1, dados2):
-  for chave, valor in dados1.items():
-    if chave in dados2:
-        if dados2[chave] == valor:
+def comparar(daodos_vipp, dados_distriprime):
+  for chave, valor in daodos_vipp.items():
+    if chave in dados_distriprime:
+        if dados_distriprime[chave] == valor:
             status = "presente"
         else:
             status = "presente, mas com valor diferente"
+            valor_distriprime = dados_distriprime[chave]
+            print(f"A chave '{chave}' está presente tanto em dados_distriprime quanto em dados_vipp, mas com valores diferentes:")
+            print(f"Valor em dados_distriprime: {valor_distriprime}")
+            print(f"Valor em dados_vipp: {valor}")
     else:
         status = "ausente"
-    print(f"A chave '{chave}' com valor '{valor}' está {status} em Dicionário A.")
+    print(f"A chave '{chave}' com valor '{valor}' está {status} em dados_distriprime.")
 
   # Verificar chaves do Dicionário B ausentes em Dicionário A
-  chaves_ausentes = [chave for chave in dados1 if chave not in dados2]
+  """ chaves_ausentes = [chave for chave in daodos_vipp if chave not in dados_distriprime]
   for chave in chaves_ausentes:
-      valor = dados1[chave]
-      print(f"A chave '{chave}' com valor '{valor}' não está presente em Dicionário A.")
-
-
+      valor = daodos_vipp[chave]
+      print(f"A chave '{chave}' com valor '{valor}' não está presente em Dicionário A.") """
 
 
 if __name__ == '__main__':

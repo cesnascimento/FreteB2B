@@ -1,5 +1,40 @@
 import requests
 
+request_vipp = requests.Session()
+
+cookies = {
+    'PHPSESSID': '1okr7198htgh6c9ggqmjr743k6',
+}
+
+headers = {
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': 'pt-BR,pt;q=0.6',
+    'Cache-Control': 'max-age=0',
+    'Connection': 'keep-alive',
+    'Content-Type': 'application/x-www-form-urlencoded',
+    # 'Cookie': 'PHPSESSID=1okr7198htgh6c9ggqmjr743k6',
+    'Origin': 'https://vipp.visualset.com.br',
+    'Referer': 'https://vipp.visualset.com.br/vipp/inicio/index.php',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'same-origin',
+    'Sec-Fetch-User': '?1',
+    'Sec-GPC': '1',
+    'Upgrade-Insecure-Requests': '1',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+    'dnt': '1',
+    'sec-ch-ua': '"Not.A/Brand";v="8", "Chromium";v="114", "Brave";v="114"',
+    'sec-ch-ua-mobile': '?0',
+    'sec-ch-ua-platform': '"Windows"',
+}
+
+data = {
+    'txtUsr': 'epsadmin49491',
+    'txtPwd': 't1ovme',
+}
+
+request_vipp.post('https://vipp.visualset.com.br/vipp/inicio/index.php', cookies=cookies, headers=headers, data=data)
+
 cookies = {
   'cmbchkImpArJunto': '0',
   'cmbFilaImpressaoCorreios': '1',
@@ -57,7 +92,7 @@ def headers_vipp(rastreio):
       'cmpbusca': 'EtqEct',
       'lista': f'{rastreio}',
   }
-  response = requests.post(
+  response = request_vipp.post(
       'https://vipp.visualset.com.br/vipp/entradadados/FrmCheckList/ListarCheckList.php',
       cookies=cookies,
       headers=headers,
