@@ -1,6 +1,6 @@
 import pandas as pd
 import re
-from headers_vipp_tec import headers_vipp
+from headers_vipp_distri import headers_vipp
 import re
 import os
 
@@ -16,17 +16,18 @@ def limpar_string(string):
 
 def abrir_planilha():
     dicionario = dict()
-    filename = '\\\\dmsrv-nfs/Temporario/Correios/planilha_correios_tecnopharma/'
+    filename = '\\\\dmsrv-nfs/Temporario/Correios/planilha_correios_distriprime/'
     arquivos = os.listdir(filename)
-    arquivo_xlsx = [arquivo for arquivo in arquivos if arquivo.endswith('.xlsx')]
+    print(arquivos)
+    arquivo_xlsx = [arquivo for arquivo in arquivos if arquivo.endswith('.csv')]
+
     arquivo_xlsx = arquivo_xlsx[0]
     caminho_arquivo = os.path.join(filename, arquivo_xlsx)
-    df = pd.read_excel(caminho_arquivo, skiprows=2)
-    print(df.columns)
-    numeros_rastreios = df['Etiqueta'].dropna().tolist()
-    valores_unitarios = df['COBRADO'].dropna().tolist()
+    df = pd.read_csv(caminho_arquivo, skiprows=6, sep=';', encoding='cp1252')
+    numeros_rastreios = df['Numero da Etiqueta'].dropna().tolist()
+    valores_unitarios = df['Valor do Servico (R$)'].dropna().tolist()
     for num, val in zip(numeros_rastreios, valores_unitarios):
-        dicionario[num] = limpar_string(str(val))
+        dicionario[num] = limpar_string(val)
     return dicionario
 
 
@@ -44,7 +45,7 @@ def dados_vipp(rastreio):
 
 def abrir_planilha_distriprime():
     dicionario = dict()
-    filename = '\\\\dmsrv-nfs/Temporario/Correios/correiostec.csv'
+    filename = '\\\\dmsrv-nfs/Temporario/Correios/correiosdistri.csv'
     if os.path.exists(filename):
       print("O diretório existe.")
     else:
@@ -57,8 +58,8 @@ def abrir_planilha_distriprime():
     return dicionario
 
 
-
 def comparar(dados_vipp, dados_distriprime):
+    # print(dados_vipp, dados_distriprime)
     resultados = []
     for chave, valor in dados_vipp.items():
         print('VIPP VALOR',valor)
@@ -100,11 +101,6 @@ def comparar(dados_vipp, dados_distriprime):
                 'Valor Dermage': None
             })
 
-    chaves_ausentes = [chave for chave in dados_vipp if chave not in dados_distriprime]
-    for chave in chaves_ausentes:
-        valor = dados_vipp[chave]
-        print(f"A chave '{chave}' com valor '{valor}' não está presente em dados_distriprime.")
-
     return pd.DataFrame(resultados)
 
 
@@ -117,6 +113,9 @@ if __name__ == '__main__':
         try:
             info_vipp = comparar(dados_vipp(key), dados_distriprime)
             dataframes.append(info_vipp)
-        except IndexError as e:
-            print(e, key, val)
+        except:
             pass
+
+    combined_df = pd.concat(dataframes, ignore_index=True)
+    with pd.ExcelWriter("todos_resultados_distriprime.xlsx", engine="openpyxl") as writer:
+        combined_df.to_excel(writer, sheet_name="Resultados", index=False)

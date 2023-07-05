@@ -102,5 +102,7 @@ def headers_vipp(rastreio):
   rastreio = response['rows'][0]['EtqEct']
   nota_fiscal = response['rows'][0]['NroNfe']
   valor = float(response['rows'][0]['VlrPos'])
-  dicionario[rastreio] = [nota_fiscal, valor]
+  destinario = response['rows'][0]['NomDes']
+  data_postagem = response['rows'][0]['DtaPos']
+  dicionario[rastreio] = [nota_fiscal, valor, destinario, data_postagem]
   return dicionario
