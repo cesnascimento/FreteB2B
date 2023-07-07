@@ -8,8 +8,8 @@ prepostagem_session = requests.Session()
 data_atual = datetime.now()
 data_menos_90_dias = data_atual - timedelta(days=90)
 data_formatada = data_menos_90_dias.strftime("%d/%m/%Y")
+data_atual_formatada = data_atual.strftime("%d/%m/%Y")
 
-import requests
 
 cookies = {
     'ARRAffinity': '04279cc6f0628f567c27771a1610ccf9a8553c83210d1525f0470012769f5afb',
@@ -76,23 +76,25 @@ data = {
     'ctl00$ContentPlaceHolder1$ddlFiltrar': '1',
     'ctl00$ContentPlaceHolder1$ddlOrdem': '1',
     'ctl00$ContentPlaceHolder1$txtDataInicial': f'{data_formatada}',
-    'ctl00$ContentPlaceHolder1$txtDataFinal': '05/07/2023',
+    'ctl00$ContentPlaceHolder1$txtDataFinal': f'{data_atual_formatada}',
     'ctl00$ContentPlaceHolder1$btnImgFiltrar.x': '17',
     'ctl00$ContentPlaceHolder1$btnImgFiltrar.y': '7',
 }
 
-response = requests.post(
-    'http://www.prepostagem.com.br/PrePostagem/ConsultarPrePostagens.aspx',
-    cookies=cookies,
-    headers=headers,
-    data=data,
-    verify=False,
-)
-print(response.text)
-
 
 def access_prepost():
-    pass
+    response = requests.post(
+        'http://www.prepostagem.com.br/PrePostagem/ConsultarPrePostagens.aspx',
+        cookies=cookies,
+        headers=headers,
+        data=data,
+        verify=False,
+    )
+    soup = BeautifulSoup(response.text, 'html.parser')
+    codigos_rastreios = soup.find_all('td', class_='W80 Ar Pr5')
+    notas_fiscais = soup.find_all('td', class_='W30 Ar Pr5')
+    for codigo_rastreio, nota_fiscal in zip(codigos_rastreios, notas_fiscais):
+        print(codigo_rastreio.getText(), nota_fiscal.getText())
 
 if __name__ == '__main__':
-    print()
+    access_prepost()
