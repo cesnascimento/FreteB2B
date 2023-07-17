@@ -3,6 +3,7 @@ import re
 from headers_vipp_tec import headers_vipp
 import re
 import os
+from headers_prepost import access_prepost
 
 
 def limpar_string(string):
@@ -22,7 +23,6 @@ def abrir_planilha():
     arquivo_xlsx = arquivo_xlsx[0]
     caminho_arquivo = os.path.join(filename, arquivo_xlsx)
     df = pd.read_csv(caminho_arquivo, sep=';', skiprows=2, encoding='cp1252')
-    print(df.columns)
     numeros_rastreios = df['Etiqueta'].dropna().tolist()
     valores_unitarios = df['Valor do Servico'].dropna().tolist()
     for num, val in zip(numeros_rastreios, valores_unitarios):
@@ -57,10 +57,17 @@ def abrir_planilha_distriprime():
     return dicionario
 
 
-def comparar(dados_vipp, dados_distriprime):
+def comparar_prepostagem(dados_prepostagem, dados_distriprime):
+    chaves_dict1 = dados_prepostagem.keys()
+    chaves_dict2 = dados_distriprime.values()
+    #print('PREPOSTAGEM', chaves_dict1)
+    print('CORREOS', chaves_dict2)
+
+
+def comparar_vipp(dados_vipp, dados_distriprime):
     resultados = []
     for chave, valor in dados_vipp.items():
-        print('VIPP VALOR',valor)
+        #print('VIPP VALOR',valor)
         if chave in dados_distriprime:
             if dados_distriprime[chave] == valor[0]:
                 status = "presente"
@@ -107,10 +114,13 @@ if __name__ == '__main__':
     dados_distriprime = abrir_planilha_distriprime()
     dataframes = []
     for key, val in dados_correios.items():
-        print(key, val)
+        #print(key, val)
         try:
-            info_vipp = comparar(dados_vipp(key), dados_distriprime)
-            dataframes.append(info_vipp)
+            #info_vipp = comparar_vipp(dados_vipp(key), dados_distriprime)
+            dados_prepost = access_prepost()
+            comparar_prepostagem(dados_prepost, dados_distriprime)
+            #info_prepost = comparar_prepostagem(dados_prepostagem(key), dados_distriprime)
+            #dataframes.append(info_vipp)
         except:
             pass
 

@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 prepostagem_session = requests.Session()
 
 data_atual = datetime.now()
-data_menos_90_dias = data_atual - timedelta(days=90)
+data_menos_90_dias = data_atual - timedelta(days=30)
 data_formatada = data_menos_90_dias.strftime("%d/%m/%Y")
 data_atual_formatada = data_atual.strftime("%d/%m/%Y")
 
@@ -83,6 +83,7 @@ data = {
 
 
 def access_prepost():
+    dicinario = {}
     response = requests.post(
         'http://www.prepostagem.com.br/PrePostagem/ConsultarPrePostagens.aspx',
         cookies=cookies,
@@ -90,11 +91,18 @@ def access_prepost():
         data=data,
         verify=False,
     )
+
     soup = BeautifulSoup(response.text, 'html.parser')
-    codigos_rastreios = soup.find_all('td', class_='W80 Ar Pr5')
-    notas_fiscais = soup.find_all('td', class_='W30 Ar Pr5')
-    for codigo_rastreio, nota_fiscal in zip(codigos_rastreios, notas_fiscais):
-        print(codigo_rastreio.getText(), nota_fiscal.getText())
+    etiquetas = soup.find_all('td', class_='W80 Ar Pr5')
+    detalhes = soup.findAll('td', class_='W140 Al Pl5')
+    for etiqueta, detalhe in zip(etiquetas, detalhes):
+        dicinario[etiqueta.text] = detalhe.a['href']
+    
+
+    return dicinario
+
+
+
 
 if __name__ == '__main__':
     access_prepost()

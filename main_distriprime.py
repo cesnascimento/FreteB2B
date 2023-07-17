@@ -24,6 +24,7 @@ def abrir_planilha():
     arquivo_xlsx = arquivo_xlsx[0]
     caminho_arquivo = os.path.join(filename, arquivo_xlsx)
     df = pd.read_csv(caminho_arquivo, skiprows=6, sep=';', encoding='cp1252')
+    print(df.columns)
     numeros_rastreios = df['Numero da Etiqueta'].dropna().tolist()
     valores_unitarios = df['Valor do Servico (R$)'].dropna().tolist()
     for num, val in zip(numeros_rastreios, valores_unitarios):
@@ -58,8 +59,8 @@ def abrir_planilha_distriprime():
     return dicionario
 
 
-def comparar(dados_vipp, dados_distriprime):
-    # print(dados_vipp, dados_distriprime)
+def comparar_vipp(dados_vipp, dados_distriprime):
+    print('aqui os 2', dados_vipp, dados_distriprime)
     resultados = []
     for chave, valor in dados_vipp.items():
         print('VIPP VALOR',valor)
@@ -111,7 +112,7 @@ if __name__ == '__main__':
     for key, val in dados_correios.items():
         print(key, val)
         try:
-            info_vipp = comparar(dados_vipp(key), dados_distriprime)
+            info_vipp = comparar_vipp(dados_vipp(key), dados_distriprime)
             dataframes.append(info_vipp)
         except:
             pass
