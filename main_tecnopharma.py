@@ -3,7 +3,8 @@ import re
 from headers_vipp_tec import headers_vipp
 import re
 import os
-from headers_prepost import access_prepost
+from headers_prepost import access_prepost, prepostagem_session, detalhe_objeto, cookies
+from bs4 import BeautifulSoup
 
 
 def limpar_string(string):
@@ -17,7 +18,8 @@ def limpar_string(string):
 
 def abrir_planilha():
     dicionario = dict()
-    filename = '\\\\dmsrv-nfs/Temporario/Correios/planilha_correios_tecnopharma/'
+    #filename = '\\\\dmsrv-nfs/Temporario/Correios/planilha_correios_tecnopharma/'
+    filename = 'planilha_correios_tecnopharma/'
     arquivos = os.listdir(filename)
     arquivo_xlsx = [arquivo for arquivo in arquivos if arquivo.endswith('.csv')]
     arquivo_xlsx = arquivo_xlsx[0]
@@ -38,13 +40,14 @@ def dados_vipp(rastreio):
             dicionario[int(val[0])] = [val[1], val[2], key, val[3]]
         except Exception as e:
             print('DEU ERRO', e)
-    print(dicionario)
+    print('diconario vipp', dicionario)
     return dicionario
 
 
-def abrir_planilha_distriprime():
+def abrir_planilha_tecnopharma():
     dicionario = dict()
-    filename = '\\\\dmsrv-nfs/Temporario/Correios/correiostec.csv'
+    #filename = '\\\\dmsrv-nfs/Temporario/Correios/correiostec.csv'
+    filename = 'planilha_fatura/correiostec.csv'
     if os.path.exists(filename):
       print("O diretório existe.")
     else:
@@ -57,34 +60,82 @@ def abrir_planilha_distriprime():
     return dicionario
 
 
-def comparar_prepostagem(dados_prepostagem, dados_distriprime):
-    chaves_dict1 = dados_prepostagem.keys()
-    chaves_dict2 = dados_distriprime.values()
-    #print('PREPOSTAGEM', chaves_dict1)
-    print('CORREOS', chaves_dict2)
+def remove_BR_from_key(key):
+    return key.replace('BR', '')
 
 
-def comparar_vipp(dados_vipp, dados_distriprime):
+def buscar_prepostagem(dados_correios, dados_prepostagem):
+    dicionario = {}
+    for chave in dados_correios:
+        nova_chave = remove_BR_from_key(chave)
+        if nova_chave in dados_prepostagem:
+            print(f'Chave: {chave}, valorers: {dados_correios[chave]}, {dados_prepostagem[nova_chave]}')
+            params = {
+                'idobjeto': f'{dados_prepostagem[nova_chave]}',
+            }
+            pagina = prepostagem_session.get(
+                'https://www.prepostagem.com.br/PrePostagem/DetalhesObjetoDash.aspx',
+                params=params,
+                cookies=cookies
+            )
+            nota_fiscal, valor_postagem, valor_data, valor_destinatario = detalhe_objeto(pagina)
+            dicionario[nota_fiscal] = [limpar_string(valor_postagem), valor_data, valor_destinatario, chave]
+    return dicionario
+
+
+def comparar_prepostagem(dados_prepostagem, dados_tecnopharma):
     resultados = []
-    for chave, valor in dados_vipp.items():
-        #print('VIPP VALOR',valor)
-        if chave in dados_distriprime:
-            if dados_distriprime[chave] == valor[0]:
+    for chave, valor in dados_prepostagem.items():
+        """ print('PREPOSTAGEM VALOR', chave, valor) """
+        if chave in dados_tecnopharma:
+            if dados_tecnopharma[chave] == valor[0]:
                 status = "presente"
-                valor_distriprime = dados_distriprime[chave]
-                cliente = valor[1]
+                valor_tecnopharma = dados_tecnopharma[chave]
+                cliente = valor[2]
                 resultados.append({
-                    'Data': valor[3],
+                    'Data': valor[1],
                     'Cliente': cliente,
-                    'Codigo Rastreio': valor[2],
+                    'Codigo Rastreio': valor[3],
                     'Nota Fiscal': chave,
                     'Valor Correios': valor[0],
                     'Status': status,
-                    'Valor Dermage': valor_distriprime
+                    'Valor Dermage': valor_tecnopharma
                 })
             else:
                 status = "presente, mas com valor diferente"
-                valor_distriprime = dados_distriprime[chave]
+                valor_tecnopharma = dados_tecnopharma[chave]
+                cliente = valor[2]
+                resultados.append({
+                    'Data': valor[1],
+                    'Cliente': cliente,
+                    'Codigo Rastreio': valor[3],
+                    'Nota Fiscal': chave,
+                    'Valor Correios': valor[0],
+                    'Status': status,
+                    'Valor Dermage': valor_tecnopharma,
+                    'Diferença': abs(valor[0] - valor_tecnopharma)
+                })
+        else:
+            status = "ausente"
+            resultados.append({
+                'Codigo Rastreio': valor[3],
+                'Nota Fiscal': chave,
+                'Valor Correios': valor[0],
+                'Status': status,
+                'Valor Dermage': None
+            })
+
+    return pd.DataFrame(resultados)
+
+
+def comparar_vipp(dados_vipp, dados_tecnopharma):
+    resultados = []
+    for chave, valor in dados_vipp.items():
+        #print('VIPP VALOR',valor)
+        if chave in dados_tecnopharma:
+            if dados_tecnopharma[chave] == valor[0]:
+                status = "presente"
+                valor_tecnopharma = dados_tecnopharma[chave]
                 cliente = valor[1]
                 resultados.append({
                     'Data': valor[3],
@@ -93,8 +144,21 @@ def comparar_vipp(dados_vipp, dados_distriprime):
                     'Nota Fiscal': chave,
                     'Valor Correios': valor[0],
                     'Status': status,
-                    'Valor Dermage': valor_distriprime,
-                    'Diferença': abs(valor[0] - valor_distriprime)
+                    'Valor Dermage': valor_tecnopharma
+                })
+            else:
+                status = "presente, mas com valor diferente"
+                valor_tecnopharma = dados_tecnopharma[chave]
+                cliente = valor[1]
+                resultados.append({
+                    'Data': valor[3],
+                    'Cliente': cliente,
+                    'Codigo Rastreio': valor[2],
+                    'Nota Fiscal': chave,
+                    'Valor Correios': valor[0],
+                    'Status': status,
+                    'Valor Dermage': valor_tecnopharma,
+                    'Diferença': abs(valor[0] - valor_tecnopharma)
                 })
         else:
             status = "ausente"
@@ -111,16 +175,17 @@ def comparar_vipp(dados_vipp, dados_distriprime):
 
 if __name__ == '__main__':
     dados_correios = abrir_planilha()
-    dados_distriprime = abrir_planilha_distriprime()
+    dados_tecnopharma = abrir_planilha_tecnopharma()
     dataframes = []
+    dados_prepost = access_prepost()
+    dados_prepostagem = buscar_prepostagem(dados_correios, dados_prepost)
+    info_prepostagem = comparar_prepostagem(dados_prepostagem, dados_tecnopharma)
+    dataframes.append(info_prepostagem)
     for key, val in dados_correios.items():
-        #print(key, val)
+        print(key, val)
         try:
-            #info_vipp = comparar_vipp(dados_vipp(key), dados_distriprime)
-            dados_prepost = access_prepost()
-            comparar_prepostagem(dados_prepost, dados_distriprime)
-            #info_prepost = comparar_prepostagem(dados_prepostagem(key), dados_distriprime)
-            #dataframes.append(info_vipp)
+            info_vipp = comparar_vipp(dados_vipp(key), dados_tecnopharma)
+            dataframes.append(info_vipp)
         except:
             pass
 

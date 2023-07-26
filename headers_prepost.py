@@ -1,12 +1,13 @@
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
+import re
 
 
 prepostagem_session = requests.Session()
 
 data_atual = datetime.now()
-data_menos_90_dias = data_atual - timedelta(days=30)
+data_menos_90_dias = data_atual - timedelta(days=50)
 data_formatada = data_menos_90_dias.strftime("%d/%m/%Y")
 data_atual_formatada = data_atual.strftime("%d/%m/%Y")
 
@@ -83,7 +84,7 @@ data = {
 
 
 def access_prepost():
-    dicinario = {}
+    dicionario = {}
     response = requests.post(
         'http://www.prepostagem.com.br/PrePostagem/ConsultarPrePostagens.aspx',
         cookies=cookies,
@@ -96,12 +97,67 @@ def access_prepost():
     etiquetas = soup.find_all('td', class_='W80 Ar Pr5')
     detalhes = soup.findAll('td', class_='W140 Al Pl5')
     for etiqueta, detalhe in zip(etiquetas, detalhes):
-        dicinario[etiqueta.text] = detalhe.a['href']
+        rastreio = etiqueta.text
+        id = search_id(detalhe.a['href'])
+        dicionario[rastreio] = id
+
+    return dicionario
+
+
+def search_id(text):
+    padrao_regex = r'\d+'
+
+    resultado = re.search(padrao_regex, text)
+
+    if resultado:
+        codigo = resultado.group()
+        return codigo
+    else:
+        codigo = None
+        return codigo
     
 
-    return dicinario
+def detalhe_objeto(pagina):
+    soup = BeautifulSoup(pagina.text, 'html.parser')
 
+    # Encontrar o elemento que contém a "Nota Fiscal" usando a string "Nota Fiscal" como filtro
+    elemento_nota_fiscal = soup.find('span', {'id': 'lblNotaFiscal'})
 
+    # Verificar se o elemento foi encontrado e extrair o valor se sim
+
+    if elemento_nota_fiscal:
+        nota_fiscal = elemento_nota_fiscal.text
+        if "RPS" in nota_fiscal:
+            nota_fiscal = nota_fiscal.replace("RPS", "").strip()
+    else:
+        nota_fiscal = None
+
+    # Encontrar o elemento que contém o "Valor Postagem" usando a string "Valor Postagem" como filtro
+    elemento_valor_postagem = soup.find('span', {'id': 'lblValorPostagem'})
+
+    # Verificar se o elemento foi encontrado e extrair o valor se sim
+    if elemento_valor_postagem:
+        valor_postagem = elemento_valor_postagem.text
+    else:
+        valor_postagem = None
+    
+
+    elemento_data = soup.find('td', {'class': 'W110 Ac'})
+
+    if elemento_data:
+        valor_data = elemento_data.text
+    else:
+        valor_data = None
+
+    elemento_destinatario = soup.find('span', {'id': 'lblDestinatario'})
+
+    if elemento_data:
+        valor_destinatario = elemento_destinatario.text
+    else:
+        valor_destinatario = None
+
+    # Imprimir os resultados
+    return int(nota_fiscal), valor_postagem, valor_data, valor_destinatario
 
 
 if __name__ == '__main__':

@@ -60,7 +60,6 @@ def abrir_planilha_distriprime():
 
 
 def comparar_vipp(dados_vipp, dados_distriprime):
-    print('aqui os 2', dados_vipp, dados_distriprime)
     resultados = []
     for chave, valor in dados_vipp.items():
         print('VIPP VALOR',valor)
